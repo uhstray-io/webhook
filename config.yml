@@ -1,0 +1,13 @@
+server:
+  port: '8000'
+  host: 0.0.0.0
+
+discord:
+- name: Shopify to Discord
+  path: /shopify/webhook
+  url: https://discord.com/api/webhooks/1181408999732695070/P5yI267tzCAc-FU2zZqwBcgm_YSIfWCmqnd048HGm-6qsZ4462XEDHms87WrwH-7yQNz
+  logger: False
+
+- name: test_name
+  path: /test/path
+  url: https://discord.com/api/webhooks/123/123
