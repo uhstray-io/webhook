@@ -31,7 +31,7 @@ struct WebhookConfig {
     logger: Option<bool>,
 }
 
-// Main entry point
+// Main entry point.
 #[tokio::main]
 async fn main() {
     // Load configuration
