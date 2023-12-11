@@ -10,3 +10,11 @@ https://docs.github.com/en/actions/using-jobs/using-a-matrix-for-your-jobs
 
 
 https://github.com/helix-editor/helix/blob/master/.github/workflows/release.yml
+
+
+
+
+
+https://github.com/actions-rs
+https://github.com/actions-rs/awesome-rust-actions
+https://github.com/marketplace/actions/rust-toolchain

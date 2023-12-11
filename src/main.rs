@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::io::Write;
 use std::sync::Arc;
 
 use axum::extract::{Extension, Json, Path};
@@ -8,7 +9,6 @@ use tokio::net::TcpListener;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{self, json, Value};
-use serde_yaml;
 
 // Configuration struct
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -28,10 +28,10 @@ struct WebhookConfig {
     name: String,
     path: String,
     url: String,
-    logger: Option<bool>,
+    logging: Option<bool>,
 }
 
-// Main entry point.
+// Main entry point
 #[tokio::main]
 async fn main() {
     // Load configuration
@@ -49,6 +49,7 @@ async fn main() {
 
     // Run our application
     let addr_string = format!("{}:{}", shared_cfg.server.host, shared_cfg.server.port);
+    println!("Listening on: {}", addr_string);
     let listener = TcpListener::bind(addr_string).await.unwrap();
 
     axum::serve(listener, app).await.unwrap();
@@ -68,7 +69,21 @@ async fn generic_webhook_handler(
         if webhook.path == "/".to_string() + &path {
             println!("Webhook we are using: {:?}", webhook);
 
-            println!("Payload: {:?}", payload);
+            println!("Payload: {:#?}", payload);
+
+            // If logging is enabled, save the payload to a file
+            if webhook.logging.unwrap_or(false) {
+                // Create a folder called "logs" if it doesn't exist
+                std::fs::create_dir_all("logs").unwrap();
+
+                // Get the current time and format it
+                let time = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+                let file_name = format!("logs/payload_{}.json", time);
+
+                // Create a file with the current time as the name and write the payload to it
+                let mut file = std::fs::File::create(file_name).unwrap();
+                file.write_all(payload.to_string().as_bytes()).unwrap();
+            }
 
             // get the "data" feild from the JSON payload without the quotes
             let data = payload.get("data").unwrap().to_string();
