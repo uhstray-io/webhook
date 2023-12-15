@@ -1,3 +1,5 @@
+mod config;
+
 use std::error::Error;
 use std::io::Write;
 use std::sync::Arc;
@@ -7,48 +9,26 @@ use axum::{http::StatusCode, routing::post, Router};
 use reqwest::{Client, Response};
 use tokio::net::TcpListener;
 
-use serde::{Deserialize, Serialize};
 use serde_json::{self, json, Value};
 
-// Configuration struct
-#[derive(Debug, Deserialize, Serialize, Clone)]
-struct Config {
-    server: ServerConfig,
-    discord: Vec<WebhookConfig>,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-struct ServerConfig {
-    port: String,
-    host: String,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-struct WebhookConfig {
-    name: String,
-    path: String,
-    url: String,
-    logging: Option<bool>,
-}
+use config::{Config, WebhookConfig};
 
 // Main entry point
 #[tokio::main]
 async fn main() {
     // Load configuration
-    let config_file = std::fs::File::open("config.yml").expect("Failed to Find config.yml");
-    let cfg: Config = serde_yaml::from_reader(config_file).expect("Failed to Read config.yml");
-
-    // Create shared state
-    let shared_cfg = Arc::new(cfg);
-    println!("Config: {:?}", shared_cfg.clone());
+    let cfg = Config::load("config.yaml")
+        .expect("Failed to load config")
+        .shared();
+    println!("Config: {:?}", cfg.clone());
 
     // Build our application with a route
     let app = Router::new()
         .route("/*path", post(generic_webhook_handler))
-        .layer(Extension(shared_cfg.clone()));
+        .layer(Extension(cfg.clone()));
 
     // Run our application
-    let addr_string = format!("{}:{}", shared_cfg.server.host, shared_cfg.server.port);
+    let addr_string = format!("{}:{}", cfg.server.host, cfg.server.port);
     println!("Listening on: {}", addr_string);
     let listener = TcpListener::bind(addr_string).await.unwrap();
 
@@ -72,7 +52,7 @@ async fn generic_webhook_handler(
 
             log_payload(webhook, &payload);
 
-            // get the "data" feild from the JSON payload without the quotes
+            // get the "data" field from the JSON payload without the quotes
             let data = payload.get("data").unwrap().to_string();
 
             let res = send_data_to_webhook(&webhook.url, data.trim())
